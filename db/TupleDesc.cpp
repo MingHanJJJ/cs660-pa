@@ -30,7 +30,7 @@ TupleDesc::TupleDesc(const std::vector<Types::Type> &types) {
     size_t size = types.size();
     td_items.reserve(size);
     for(int i = 0; i < size; i++){
-        td_items[i] = TDItem(types[i], std::to_string(i));
+        td_items.push_back((TDItem(types[i], std::to_string(i))));
         td_size_byte += getLen(types[i]); // calculate size in byte
     }
 }
@@ -41,7 +41,7 @@ TupleDesc::TupleDesc(const std::vector<Types::Type> &types, const std::vector<st
     size_t size = types.size();
     td_items.reserve(size);
     for(int i = 0; i < size; i++){
-        td_items[i] = TDItem(types[i], names[i]);
+        td_items.push_back((TDItem(types[i], names[i])));
         td_size_byte += getLen(types[i]); // calculate size in byte
     }
 }
@@ -63,13 +63,13 @@ Types::Type TupleDesc::getFieldType(size_t i) const {
 
 int TupleDesc::fieldNameToIndex(const std::string &fieldName) const {
     // TODO pa1.1: implement
-    size_t size = td_items.size();
+    std::size_t size = td_items.size();
     for(int i = 0; i < size; i++){
         if(td_items[i].fieldName == fieldName){
             return i;
         }
     }
-    return -1; // if not found
+    throw std::invalid_argument("Input FieldName is invalid");
 }
 
 size_t TupleDesc::getSize() const {
@@ -82,6 +82,11 @@ TupleDesc TupleDesc::merge(const TupleDesc &td1, const TupleDesc &td2) {
     TupleDesc td3;
     td3.td_items.insert(td3.end(), td1.begin(), td1.end());
     td3.td_items.insert(td3.end(), td2.begin(), td2.end());
+    // build private variable td_size_bytes
+    td3.td_size_byte = 0;
+    for(auto &item : td3.td_items){
+        td3.td_size_byte += Types::getLen(item.fieldType);
+    }
     return td3;
 }
 
