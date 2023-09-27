@@ -32,6 +32,7 @@ namespace db {
      */
     class HeapFile : public DbFile {
         // TODO pa1.5: add private members
+        TupleDesc td;
     public:
 
         /**
