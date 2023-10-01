@@ -70,7 +70,6 @@ TEST(HeapPageReadTest, TestIterator) {
     db::Database::getCatalog().addTable(new db::SkeletonFile(-1, db::Utility::getTupleDesc(2)),
                                         db::Utility::generateUUID());
     db::HeapPage page(pid, EXAMPLE_DATA);
-
     int row = 0;
     for (const db::Tuple &tup: page) {
         const db::Field &f0 = tup.getField(0);

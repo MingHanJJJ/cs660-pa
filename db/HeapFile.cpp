@@ -14,15 +14,17 @@ using namespace db;
 //
 
 // TODO pa1.5: implement
-HeapFile::HeapFile(const char *fname, const TupleDesc &td) {
+HeapFile::HeapFile(const char *fname, const TupleDesc &td) : fname(fname), td(td) {
 }
 
 int HeapFile::getId() const {
     // TODO pa1.5: implement
+    return std::hash<std::string>{}(fname);
 }
 
 const TupleDesc &HeapFile::getTupleDesc() const {
     // TODO pa1.5: implement
+    return td;
 }
 
 Page *HeapFile::readPage(const PageId &pid) {

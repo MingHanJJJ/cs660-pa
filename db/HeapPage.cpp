@@ -46,14 +46,17 @@ HeapPage::HeapPage(const HeapPageId &id, uint8_t *data) : pid(id) {
 
 int HeapPage::getNumTuples() {
     // TODO pa1.4: implement
+    return (Database::getBufferPool().getPageSize()*8)/(td.getSize()*8 + 1);
 }
 
 int HeapPage::getHeaderSize() {
     // TODO pa1.4: implement
+    return Database::getBufferPool().getPageSize() - numSlots * td.getSize();
 }
 
 PageId &HeapPage::getId() {
     // TODO pa1.4: implement
+    return pid;
 }
 
 void HeapPage::readTuple(Tuple *t, uint8_t *data, int slotId) {
@@ -102,16 +105,38 @@ uint8_t *HeapPage::createEmptyPageData() {
 
 int HeapPage::getNumEmptySlots() const {
     // TODO pa1.4: implement
+    int num = 0;
+    for(int i = 0; i < numSlots; i++){
+        if(!isSlotUsed(i)){
+            num++;
+        }
+    }
+    return num;
 }
 
 bool HeapPage::isSlotUsed(int i) const {
     // TODO pa1.4: implement
+    int byte = i/8;
+    int bit = i%8;
+    return (header[byte] >> bit) & 1;
 }
 
 HeapPageIterator HeapPage::begin() const {
     // TODO pa1.4: implement
+    return HeapPageIterator(0, this);
 }
 
 HeapPageIterator HeapPage::end() const {
     // TODO pa1.4: implement
+    int used_sluts = getNumEmptySlots();
+    int num = 0;
+    for(int i = 0; i < numSlots; i++){
+        if(isSlotUsed(i)){
+            num++;
+        }
+        if(num == used_sluts){
+            return HeapPageIterator(i+1, this);
+        }
+    }
+    return HeapPageIterator(numSlots, this);
 }
