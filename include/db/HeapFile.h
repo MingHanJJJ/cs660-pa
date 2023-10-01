@@ -7,12 +7,22 @@
 #include <db/PageId.h>
 #include <db/TransactionId.h>
 #include <db/HeapPage.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <cstdio>
+#include <cstdlib>
 
 namespace db {
+    class HeapFile;
     class HeapFileIterator {
         // TODO pa1.5: add private members
+        HeapPageId* pageId;
+        HeapPage* page;
+        int num_pages;
+        HeapPageIterator pageIterator;
     public:
-        HeapFileIterator(/* TODO pa1.5: add parameters */);
+        HeapFileIterator(HeapPageId *id, int num_pages, HeapPageIterator pageIterator);
+
         bool operator!=(const HeapFileIterator &other) const;
 
         Tuple &operator*() const;
@@ -32,8 +42,13 @@ namespace db {
      */
     class HeapFile : public DbFile {
         // TODO pa1.5: add private members
+        friend class HeapFileIterator;
         TupleDesc td;
         const char* fname;
+        int num_pages;
+        int fd;
+        size_t page_size;
+        off_t file_size;
     public:
 
         /**

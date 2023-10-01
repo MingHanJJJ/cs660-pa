@@ -15,7 +15,10 @@ Page *BufferPool::getPage(const TransactionId &tid, PageId *pid) {
             return page;
         }
     }
-    throw std::invalid_argument("Can't found page by the given id");
+    // read from file and add it to the buffer
+    page_buffer.push_back(Database::getCatalog().getDatabaseFile(pid->getTableId())->readPage(*pid));
+    return page_buffer.back();
+
 }
 
 void BufferPool::evictPage() {
