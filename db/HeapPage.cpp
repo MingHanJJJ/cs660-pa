@@ -122,7 +122,8 @@ bool HeapPage::isSlotUsed(int i) const {
     // TODO pa1.4: implement
     int byte = i/8;
     int bit = i%8;
-    return (header[byte] >> bit) & 1;
+    bool isUsed = (header[byte] >> bit) & 0x01;
+    return isUsed;
 }
 
 HeapPageIterator HeapPage::begin() const {

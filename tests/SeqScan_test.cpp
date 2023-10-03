@@ -28,6 +28,7 @@ TEST(SeqScanTest, IterateFile) {
         std::cout << tup.to_string() << std::endl;
     }
 }
+
 TEST(SeqScanTest, IterateFile2) {
     std::vector<db::Types::Type> types = {db::Types::INT_TYPE, db::Types::INT_TYPE};
 
