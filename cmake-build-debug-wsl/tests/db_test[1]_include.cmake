@@ -1,5 +1,0 @@
-if(EXISTS "/mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa/cmake-build-debug-wsl/tests/db_test[1]_tests.cmake")
-  include("/mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa/cmake-build-debug-wsl/tests/db_test[1]_tests.cmake")
-else()
-  add_test(db_test_NOT_BUILT db_test_NOT_BUILT)
-endif()
