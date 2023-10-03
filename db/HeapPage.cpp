@@ -132,7 +132,7 @@ HeapPageIterator HeapPage::begin() const {
 
 HeapPageIterator HeapPage::end() const {
     // TODO pa1.4: implement
-    int used_sluts = getNumEmptySlots();
+    int used_sluts = numSlots - getNumEmptySlots();
     int num = 0;
     for(int i = 0; i < numSlots; i++){
         if(isSlotUsed(i)){

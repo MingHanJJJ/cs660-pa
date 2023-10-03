@@ -52,5 +52,9 @@ Tuple::iterator Tuple::end() const {
 
 std::string Tuple::to_string() const {
     // TODO pa1.1: implement
-    return "tuple";
+    std::string str;
+    for(auto &field : fields){
+        str += field->to_string() +", ";
+    }
+    return str;
 }

@@ -11,7 +11,7 @@ BufferPool::BufferPool(int numPages) {
 Page *BufferPool::getPage(const TransactionId &tid, PageId *pid) {
     // TODO pa1.3: implement
     for(auto &page: page_buffer){
-        if(page->getId() == *pid){
+        if(page!= NULL && page->getId() == *pid){
             return page;
         }
     }

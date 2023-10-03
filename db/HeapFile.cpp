@@ -68,10 +68,16 @@ int HeapFile::getNumPages() {
 
 HeapFileIterator HeapFile::begin() const {
     // TODO pa1.5: implement
+    HeapPageId *id = new HeapPageId(getId(), 0);
+    HeapPage* page = dynamic_cast<HeapPage *>(Database::getBufferPool().getPage(TransactionId(), id));
+    return HeapFileIterator(id, num_pages, HeapPageIterator(0, page));
 }
 
 HeapFileIterator HeapFile::end() const {
     // TODO pa1.5: implement
+    HeapPageId *id = new HeapPageId(getId(), num_pages-1);
+    HeapPage* page = dynamic_cast<HeapPage *>(Database::getBufferPool().getPage(TransactionId(), id));
+    return HeapFileIterator(id, num_pages, HeapPageIterator(page->getNumTuples(), page));
 }
 
 //
@@ -96,9 +102,11 @@ Tuple &HeapFileIterator::operator*() const {
 HeapFileIterator &HeapFileIterator::operator++() {
     // TODO pa1.5: implement
     ++pageIterator;
-    if(pageIterator == page->end() && pageId->pageNumber() < num_pages) {
-        // new to change page
-
+    if(pageIterator == page->end() && pageId->pageNumber() < num_pages-1) {
+        // change page
+        *pageId = HeapPageId(pageId->getTableId(), pageId->pageNumber() + 1);
+        page = dynamic_cast<HeapPage *>(Database::getBufferPool().getPage(TransactionId(), pageId));
+        pageIterator = HeapPageIterator(0, page);
     }
     return *this;
 }

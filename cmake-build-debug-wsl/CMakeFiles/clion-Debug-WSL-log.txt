@@ -1,4 +1,4 @@
-C:\Windows\system32\wsl.exe --distribution Ubuntu-22.04 --exec /bin/bash -c "export CMAKE_COLOR_DIAGNOSTICS=ON && export CLION_IDE=TRUE && export JETBRAINS_IDE=TRUE && cd /mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa/cmake-build-debug-wsl && /usr/bin/cmake -DCMAKE_BUILD_TYPE=Debug -S /mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa -B /mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa/cmake-build-debug-wsl"
+C:\Windows\system32\wsl.exe --distribution Ubuntu-22.04 --exec /bin/bash -c "export CMAKE_COLOR_DIAGNOSTICS=ON && export CLION_IDE=TRUE && export JETBRAINS_IDE=TRUE && cd /mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa/cmake-build-debug-wsl && /usr/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G 'CodeBlocks - Unix Makefiles' -S /mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa -B /mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa/cmake-build-debug-wsl"
 -- Configuring done
 -- Generating done
 -- Build files have been written to: /mnt/c/Users/jeffh/OneDrive/Documents/GitHub/cs660-pa/cmake-build-debug-wsl
