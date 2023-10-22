@@ -86,6 +86,7 @@ namespace db {
          * leaf node with permission perm.
          * 
          * If f is null, it finds the left-most leaf page -- used for the iterator
+         * only leaf and internal pages will be passed to this function
          * 
          * @param tid - the transaction id
          * @param dirtypages - the list of dirty pages which should be updated with all new dirty pages
@@ -93,7 +94,8 @@ namespace db {
          * @param perm - the permissions with which to lock the leaf page
          * @param f - the field to search for
          * @return the left-most leaf page possibly containing the key field f
-         * 
+         *
+         *
          */
         BTreeLeafPage *findLeafPage(TransactionId tid, PagesMap &dirtypages,
                                     BTreePageId *pid, Permissions perm, const Field *f);

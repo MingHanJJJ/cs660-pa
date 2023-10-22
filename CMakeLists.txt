@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 enable_testing()
 
 add_subdirectory(db)
-#add_subdirectory(tests/pa1)
+add_subdirectory(tests/pa1)
 add_subdirectory(tests/pa2)
 add_subdirectory(examples)
 
