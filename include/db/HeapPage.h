@@ -116,6 +116,8 @@ namespace db {
 
         bool operator!=(const HeapPageIterator &other) const;
 
+        bool operator==(const HeapPageIterator &other) const;
+
         Tuple &operator*() const;
 
         HeapPageIterator &operator++();
