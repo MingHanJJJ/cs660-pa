@@ -7,7 +7,6 @@ BTreeLeafPage *BTreeFile::findLeafPage(TransactionId tid, PagesMap &dirtypages, 
     if(pid->getType() == BTreePageType::LEAF){
         return dynamic_cast<BTreeLeafPage *>(getPage(tid, dirtypages, pid, Permissions::READ_ONLY));
     }
-
     BTreeInternalPage *internalPage = dynamic_cast<BTreeInternalPage *>(getPage(tid, dirtypages, pid, perm));
     // if the key is not provided
     if(f == nullptr){
@@ -28,7 +27,11 @@ BTreeLeafPage *BTreeFile::findLeafPage(TransactionId tid, PagesMap &dirtypages, 
 }
 
 BTreeLeafPage *BTreeFile::splitLeafPage(TransactionId tid, PagesMap &dirtypages, BTreeLeafPage *page, const Field *field) {
-    // TODO pa2.3: implement
+    BTreeInternalPage *new_page = dynamic_cast<BTreeInternalPage *>(getEmptyPage(tid, dirtypages, BTreePageType::INTERNAL));
+    for (auto entry : *new_page){
+
+    }
+
     return nullptr;
 }
 
