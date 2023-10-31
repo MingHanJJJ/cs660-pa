@@ -496,6 +496,7 @@ void BTreeFile::updateParentPointers(TransactionId tid, PagesMap &dirtypages,
     while (it != end) {
         e = &*it;
         updateParentPointer(tid, dirtypages, &pid, e->getLeftChild());
+        ++it;
     }
     if (e != nullptr) {
         updateParentPointer(tid, dirtypages, &pid, e->getRightChild());
