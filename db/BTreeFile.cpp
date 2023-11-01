@@ -29,7 +29,7 @@ BTreeLeafPage *BTreeFile::findLeafPage(TransactionId tid, PagesMap &dirtypages, 
     }
     // last element
     BTreeEntry rightest = *internalPage->rbegin();
-    return findLeafPage(tid, dirtypages, rightest.getRightChild(), Permissions::READ_ONLY, f);
+    return findLeafPage(tid, dirtypages, rightest.getLeftChild(), Permissions::READ_ONLY, f);
 }
 
 BTreeLeafPage *BTreeFile::splitLeafPage(TransactionId tid, PagesMap &dirtypages, BTreeLeafPage *page, const Field *field) {
@@ -42,19 +42,21 @@ BTreeLeafPage *BTreeFile::splitLeafPage(TransactionId tid, PagesMap &dirtypages,
 
     std::vector<Tuple*> tuples_to_be_inserted;
     int max_tuples = page->getMaxTuples();
-    Predicate p = Predicate(0, Op::GREATER_THAN_OR_EQ, field);
+    //Predicate p = Predicate(0, Op::GREATER_THAN_OR_EQ, field);
     // iterate through page
     auto it = page->begin();
     auto end = page->end();
     Tuple *t = nullptr;
+    int tuple_counter = 0;
     // store and delete second half of tuples
     while(it != end){
         t = &*it;
-        if(p.filter(*t)){ // filter
+        if(tuple_counter < max_tuples/2){ // filter
             tuples_to_be_inserted.push_back(t);
             page->deleteTuple(t);
         }
         ++it;
+        tuple_counter++;
     }
     for(auto t : tuples_to_be_inserted){
         new_page->insertTuple(t);

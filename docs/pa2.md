@@ -6,7 +6,7 @@ will implement searching, splitting pages, redistributing tuples between pages, 
 optional).
 
 The remainder of this document gives some suggestions about how to start coding, describes a set of exercises to help
-you work through the assignment, and discusses how to hand in your code. This assignment requires you to write a fair
+you work through the assignment, and discusses how to hand in your code. This assignment requires you to write a fair 
 amount of code, so we encourage you to start early!
 
 ## Page eviction for SimpleDB Buffer
