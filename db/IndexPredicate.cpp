@@ -2,21 +2,20 @@
 
 using namespace db;
 
-IndexPredicate::IndexPredicate(Op op, const Field *fvalue) : op(op), fvalue(fvalue) {
-}
+IndexPredicate::IndexPredicate(Predicate::Op op, const Field *fvalue) : op(op), fvalue(fvalue) {}
 
 const Field *IndexPredicate::getField() const {
     return fvalue;
 }
 
-Op IndexPredicate::getOp() const {
+Predicate::Op IndexPredicate::getOp() const {
     return op;
 }
 
 bool IndexPredicate::operator==(const IndexPredicate &other) const {
-    return *fvalue == *other.getField() && op == other.getOp();
+    return op == other.op && *fvalue == *other.fvalue;
 }
 
 std::size_t std::hash<IndexPredicate>::operator()(const IndexPredicate &ipd) const {
-    return std::hash<Op>()(ipd.getOp()) ^ std::hash<string>()(ipd.getField()->to_string());
+    return int(ipd.getOp()) ^ std::hash<const Field*>()(ipd.getField());
 }

@@ -4,19 +4,16 @@
 using namespace db;
 
 void BufferPool::evictPage() {
-    if(!pages.empty()){
-        // evict first page
-        auto it = pages.begin();
+    auto it = pages.begin();
+    if (it != pages.end()) {
         flushPage(it->first);
         pages.erase(it);
     }
 }
 
 void BufferPool::flushAllPages() {
-    for (auto it : pages){
-        if(it.second->isDirty() != std::nullopt){
-            flushPage(it.first);
-        }
+    for (const auto &item: pages) {
+        flushPage(item.first);
     }
 }
 
@@ -28,30 +25,61 @@ void BufferPool::discardPage(const PageId *pid) {
 }
 
 void BufferPool::flushPage(const PageId *pid) {
-    Page *page = pages[pid];
-    if(page->isDirty() != std::nullopt){   // if the page is dirty
-        page->markDirty(std::nullopt); // unmark dirty
-        Database::getCatalog().getDatabaseFile(pid->getTableId())->writePage(page); // write page
+    auto it = pages.find(pid);
+    if (it != pages.end() && it->second->isDirty().has_value()) {
+        it->second->markDirty(std::nullopt);
+        Database::getCatalog().getDatabaseFile(pid->getTableId())->writePage(it->second);
     }
-
 }
 
 void BufferPool::flushPages(const TransactionId &tid) {
-    for (auto it : pages){
-        if(tid == it.second->isDirty()){
-            flushPage(it.first);
+    for (const auto &item: pages) {
+        if (item.second->isDirty() == tid) {
+            flushPage(item.first);
         }
     }
 }
 
 void BufferPool::insertTuple(const TransactionId &tid, int tableId, Tuple *t) {
-    // TODO pa2.3: implement
-    std::vector<Page *> dirty_pages =  Database::getCatalog().getDatabaseFile(tableId)->insertTuple(tid, *t);
-    for(auto p : dirty_pages){
-        p->markDirty(tid);
+    auto f = Database::getCatalog().getDatabaseFile(tableId);
+    auto dirtypages = f->insertTuple(tid, *t);
+    for (auto page: dirtypages) {
+        page->markDirty(tid);
+        const PageId *pid = &page->getId();
+        if (pages.size() >= numPages && pages.find(pid) == pages.end()) {
+            evictPage();
+        }
+        pages[pid] = page;
     }
 }
 
 void BufferPool::deleteTuple(const TransactionId &tid, Tuple *t) {
-    // TODO pa2.3: implement
+    int tableId = t->getRecordId()->getPageId()->getTableId();
+    auto f = Database::getCatalog().getDatabaseFile(tableId);
+    auto dirtypages = f->insertTuple(tid, *t);
+    for (auto page: dirtypages) {
+        page->markDirty(tid);
+        const PageId *pid = &page->getId();
+        if (pages.size() >= numPages && pages.find(pid) == pages.end()) {
+            evictPage();
+        }
+        pages[pid] = page;
+    }
 }
+
+Page *BufferPool::getPage(const PageId *pid) {
+    auto it = pages.find(pid);
+    if (it != pages.end()) {
+        return it->second;
+    }
+    if (pages.size() >= numPages) {
+        evictPage();
+    }
+    Page *page = Database::getCatalog().getDatabaseFile(pid->getTableId())->readPage(*pid);
+    pages[pid] = page;
+    return page;
+}
+
+const PagesMap &BufferPool::getPages() const { return pages; }
+
+const int &BufferPool::getNumPages() const { return numPages; }
