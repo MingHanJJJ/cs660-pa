@@ -23,7 +23,7 @@ TEST(FilterTest, NE) {
     db::HeapFile table("table.dat", td);
     db::Database::getCatalog().addTable(&table, "t1");
 
-    db::SeqScan ss1(table.getId(), "s1");
+    db::SeqScan ss1(table.getId(), "s2");
     db::Predicate pred(1, db::Predicate::Op::NOT_EQUALS, new db::IntField(30));
     db::Filter f1(pred, &ss1);
     EXPECT_EQ(count(&f1), 345);
