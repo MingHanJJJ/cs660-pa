@@ -6,6 +6,7 @@
 #include <db/IntField.h>
 #include <db/Filter.h>
 #include <db/Insert.h>
+#include <db/Delete.h>
 
 static int count(db::DbIterator *it) {
     int i = 0;
@@ -94,4 +95,15 @@ TEST(InsertTest, test) {
     db::TransactionId tid;
     db::Insert insert(tid, &ss1, table.getId());
     EXPECT_EQ(count(&insert), 155);
+}
+
+TEST(DeleteTest, test) {
+    db::TupleDesc td = db::Utility::getTupleDesc(3);
+    db::HeapFile table("table.dat", td);
+    db::Database::getCatalog().addTable(&table, "t1");
+
+    db::SeqScan ss1(table.getId(), "s3");
+    db::TransactionId tid;
+    db::Delete d = db::Delete(tid, &ss1);
+    EXPECT_EQ(count(&d), 155);
 }
