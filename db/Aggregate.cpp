@@ -6,6 +6,11 @@ using namespace db;
 
 std::optional<Tuple> Aggregate::fetchNext() {
     // TODO pa3.2: some code goes here
+    if(agg_it->hasNext()){
+        return agg_it->next();
+    }else{
+        return std::nullopt;
+    }
 }
 
 Aggregate::Aggregate(DbIterator *child, int afield, int gfield, Aggregator::Op aop)
@@ -23,6 +28,21 @@ Aggregate::Aggregate(DbIterator *child, int afield, int gfield, Aggregator::Op a
         names.push_back(child->getTupleDesc().getFieldName(afield));
     }
     td = TupleDesc(types, names);
+
+    db::IntegerAggregator agg = IntegerAggregator(-1, std::nullopt, afield, aop);
+    if(gfield != Aggregator::NO_GROUPING){
+        agg = IntegerAggregator(gfield, child->getTupleDesc().getFieldType(gfield), afield, aop);
+    }
+    child->open();
+    while(child->hasNext()){
+        auto tup = child->next();
+        agg.mergeTupleIntoGroup(&tup);
+    }
+    child->close();
+    agg_it = agg.iterator();
+    children.push_back(child);
+
+
 }
 
 int Aggregate::groupField() {
@@ -57,13 +77,14 @@ Aggregator::Op Aggregate::aggregateOp() {
 void Aggregate::open() {
     // TODO pa3.2: some code goes here
     Operator::open();
-    child->open();
+    agg_it->open();
+
 }
 
 void Aggregate::rewind() {
     // TODO pa3.2: some code goes here
     Operator::rewind();
-    child->rewind();
+    agg_it->rewind();
 }
 
 const TupleDesc &Aggregate::getTupleDesc() const {
@@ -74,13 +95,17 @@ const TupleDesc &Aggregate::getTupleDesc() const {
 void Aggregate::close() {
     // TODO pa3.2: some code goes here
     Operator::close();
-    child->close();
+    agg_it->close();
 }
 
 std::vector<DbIterator *> Aggregate::getChildren() {
     // TODO pa3.2: some code goes here
+    children[0] = child;
+    return children;
 }
 
 void Aggregate::setChildren(std::vector<DbIterator *> children) {
     // TODO pa3.2: some code goes here
+    this->child = children[0];
+    this->children[0] = children[0];
 }

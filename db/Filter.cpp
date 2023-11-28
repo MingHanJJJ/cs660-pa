@@ -4,6 +4,7 @@ using namespace db;
 
 Filter::Filter(Predicate p, DbIterator *child) : p(p), child(child) {
     // TODO pa3.1: some code goes here
+    children.push_back(child);
 }
 
 Predicate *Filter::getPredicate() {
@@ -37,12 +38,14 @@ void Filter::rewind() {
 
 std::vector<DbIterator *> Filter::getChildren() {
     // TODO pa3.1: some code goes here
+    children[0] = child;
     return children;
 }
 
 void Filter::setChildren(std::vector<DbIterator *> children) {
     // TODO pa3.1: some code goes here
-    this->children = children;
+    this->child = children[0];
+    this->children[0] = children[0];
 }
 
 std::optional<Tuple> Filter::fetchNext() {

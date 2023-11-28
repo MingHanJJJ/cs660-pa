@@ -21,6 +21,9 @@ namespace db {
         int gfield;
         Aggregator::Op aop;
         TupleDesc td;
+
+        DbIterator *agg_it;
+        std::vector<DbIterator *> children;
     protected:
         /**
          * Returns the next tuple. If there is a group by field, then the first

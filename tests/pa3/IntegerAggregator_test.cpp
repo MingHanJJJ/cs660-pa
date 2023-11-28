@@ -4,6 +4,7 @@
 #include <db/SeqScan.h>
 #include <db/IntField.h>
 #include <db/IntegerAggregator.h>
+#include <db/Aggregate.h>
 #include <db/Utility.h>
 #include <db/Type.h>
 
@@ -66,6 +67,23 @@ TEST(IntegerAggregatorTest2, test) {
     }
     agg_it->close();
 
+
+}
+
+TEST(IntegerAggregatorTest3, test) {
+    db::TupleDesc td = db::Utility::getTupleDesc(3);
+    db::HeapFile table("table.dat", td);
+    db::Database::getCatalog().addTable(&table, "t1");
+
+    db::SeqScan ss1(table.getId(), "s1");
+    db::Aggregate agg(&ss1, 0 , 1, db::Aggregator::Op::COUNT);
+    db::DbIterator *it = &agg;
+    it->open();
+    while (it->hasNext()) {
+        auto tup = it->next();
+        std::cout << ' ' << tup.to_string() << std::endl;
+    }
+    it->close();
 
 }
 
