@@ -5,6 +5,7 @@
 #include <db/SeqScan.h>
 #include <db/IntField.h>
 #include <db/Join.h>
+#include <db/IntHistogram.h>
 
 static int count(db::DbIterator *it) {
     int i = 0;
@@ -58,5 +59,18 @@ TEST(JoinPredicateTest, test) {
     tup2.setField(2, &tup2_3);
 
     EXPECT_EQ(pred.filter(&tup1, &tup2), true);
+
+}
+
+
+TEST(HTest, test) {
+    db::IntHistogram H = db::IntHistogram(10, 1, 1000);
+    H.to_string();
+
+    for(int i = 1; i <= 100; i++){
+        H.addValue(i);
+    }
+
+    std::cout << H.estimateSelectivity(db::Predicate::Op::EQUALS, 70) << std::endl;
 
 }

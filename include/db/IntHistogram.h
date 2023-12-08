@@ -1,16 +1,31 @@
 #ifndef DB_INTHISTOGRAM_H
 #define DB_INTHISTOGRAM_H
 
+#include <iostream>
 #include <db/Histogram.h>
 #include <db/Predicate.h>
+#include <vector>
+
 
 namespace db {
+    class Bucket{
+    public:
+        int min;
+        int max;
+        int height;
+        Bucket(int min, int max)  : min(min), max(max), height(0){}
+    };
 
     /**
      * A class to represent a fixed-width histogram over a single integer-based field.
      */
     class IntHistogram : public Histogram {
         // TODO pa4.1: add private members
+        int min;
+        int max;
+        int buckets;
+        int totalHeight;
+        std::vector<Bucket> histog;
     public:
         /**
          * Create a new IntHistogram.
