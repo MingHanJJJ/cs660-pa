@@ -7,40 +7,43 @@ class IntegerAggregatorIterator : public DbIterator {
 private:
     // TODO pa3.2: some code goes here
     int gbfield;
-    TupleDesc td;
-    std::unordered_map<Field *, int> count;
-    std::unordered_map<Field *, int>::iterator it;
-    bool isOpen = false;
+    const TupleDesc &td;
+    Aggregator::Op what;
+    std::unordered_map<const Field *, int> count;
+    std::unordered_map<const Field *, int> aggregates;
+    std::unordered_map<const Field *, int>::iterator it;
 public:
     IntegerAggregatorIterator(int gbfield,
+                              const Aggregator::Op what,
                               const TupleDesc &td,
-                              const std::unordered_map<Field *, int> &count) : gbfield(gbfield), td(td), count(count){
+                              const std::unordered_map<const Field *, int> &aggregates,
+                              const std::unordered_map<const Field *, int> &count) :
+            gbfield(gbfield), what(what), td(td), aggregates(aggregates), count(count) {
         // TODO pa3.2: some code goes here
     }
 
     void open() override {
         // TODO pa3.2: some code goes here
-        isOpen = true;
-        it = count.begin();
+        it = aggregates.begin();
     }
 
     bool hasNext() override {
         // TODO pa3.2: some code goes here
-        return it != count.end();
+        return it != aggregates.end();
     }
 
     Tuple next() override {
         // TODO pa3.2: some code goes here
-        Tuple tup = Tuple(td);
-        if(gbfield != -1){
-            tup.setField(0, it->first);
-            tup.setField(1, new IntField(it->second));
-        } else{
-            tup.setField(0, new IntField(it->second));
+        auto next = *it;
+        ++it;
+        Tuple tuple(td);
+        if (gbfield != Aggregator::NO_GROUPING) {
+            tuple.setField(0, next.first);
+            tuple.setField(1, new IntField(next.second));
+        } else {
+            tuple.setField(0, new IntField(next.second));
         }
-        it++;
-        return tup;
-
+        return tuple;
     }
 
     void rewind() override {
@@ -56,105 +59,66 @@ public:
 
     void close() override {
         // TODO pa3.2: some code goes here
-        isOpen = false;
+        it = aggregates.end();
     }
 };
 
 IntegerAggregator::IntegerAggregator(int gbfield, std::optional<Types::Type> gbfieldtype, int afield,
-                                     Aggregator::Op what) : gbfield(gbfield), gbfieldtype(gbfieldtype), afield(afield), what(what) {
+                                     Aggregator::Op what) {
     // TODO pa3.2: some code goes here
-    std::vector<Types::Type> types;
-    std::vector<std::string> names;
-    if(gbfield != -1){
-        types.push_back(gbfieldtype.value());
-        types.push_back(Types::INT_TYPE);
-        names.push_back("");
-        names.push_back("");
-    }else{
-        types.push_back(Types::INT_TYPE);
-        names.push_back("");
+    this->gbfield = gbfield;
+    this->abfield = afield;
+    this->what = what;
+    std::vector<Types::Type> types = {Types::Type::INT_TYPE};
+    if (gbfield != Aggregator::NO_GROUPING) {
+        types.insert(types.begin(), gbfieldtype.value());
     }
-    td = TupleDesc(types, names);
-
+    td = TupleDesc(types);
 }
 
 void IntegerAggregator::mergeTupleIntoGroup(Tuple *tup) {
     // TODO pa3.2: some code goes here
-    Field *f;
-    if(gbfield != -1){
-        Field &field = const_cast<Field &>(tup->getField(gbfield));
-        Field *field_ptr = &field;
-        bool find = false;
-        for(auto &f_map : field_ptr_map){
-            if(f_map->compare(Predicate::Op::EQUALS, field_ptr)){
-                f = f_map;
-                find = true;
-                break;
+    const Field *gbField = gbfield != NO_GROUPING ? &tup->getField(gbfield) : nullptr;
+    const auto &aField = dynamic_cast<const IntField &>(tup->getField(abfield));
+    switch (what) {
+        case Op::MIN:
+            if (aggregates.find(gbField) == aggregates.end()) {
+                aggregates[gbField] = aField.getValue();
+            } else {
+                aggregates[gbField] = std::min(aggregates[gbField], aField.getValue());
             }
-        }
-        if(!find){
-            field_ptr_map.push_back(field_ptr);
-            f = field_ptr;
-        }
-    }else{
-        f = nullptr;
+            break;
+        case Op::MAX:
+            if (aggregates.find(gbField) == aggregates.end()) {
+                aggregates[gbField] = aField.getValue();
+            } else {
+                aggregates[gbField] = std::max(aggregates[gbField], aField.getValue());
+            }
+            break;
+        case Op::AVG:
+            if (count.find(gbField) == count.end()) {
+                count[gbField] = aField.getValue();
+            } else {
+                count[gbField] += aField.getValue();
+            }
+        case Op::SUM:
+            if (aggregates.find(gbField) == aggregates.end()) {
+                aggregates[gbField] = aField.getValue();
+            } else {
+                aggregates[gbField] += aField.getValue();
+            }
+            break;
+        case Op::COUNT:
+            if (aggregates.find(gbField) == aggregates.end()) {
+                aggregates[gbField] = 1;
+            } else {
+                aggregates[gbField] += 1;
+            }
+            break;
     }
-
-
-
-
-    if(count.find(f) != count.end()){ //find
-        IntField intField = (IntField &&) tup->getField(afield);
-        switch (what) {
-            case Aggregator::Op::AVG:
-                avg_counter[f].first += intField.getValue();
-                avg_counter[f].second++;
-                count[f] = avg_counter[f].first/avg_counter[f].second;
-                break;
-            case Aggregator::Op::COUNT:
-                count[f]++;
-                break;
-            case Aggregator::Op::MAX:
-                count[f] = std::max(count[f], intField.getValue());
-                break;
-            case Aggregator::Op::MIN:
-                count[f] = std::min(count[f], intField.getValue());
-                break;
-            case Aggregator::Op::SUM:
-                count[f] += intField.getValue();
-                break;
-            default:
-                break;
-        }
-    } else{
-        IntField intField = (IntField &&) tup->getField(afield);
-        switch (what) {
-            case Aggregator::Op::AVG:
-                avg_counter[f].first = intField.getValue();
-                avg_counter[f].second = 1;
-                count[f] = avg_counter[f].first;
-                break;
-            case Aggregator::Op::COUNT:
-                count[f] = 1;
-                break;
-            case Aggregator::Op::MAX:
-                count[f] = intField.getValue();
-                break;
-            case Aggregator::Op::MIN:
-                count[f] = intField.getValue();
-                break;
-            case Aggregator::Op::SUM:
-                count[f] = intField.getValue();
-                break;
-            default:
-                break;
-        }
-    }
-
 }
-
 
 DbIterator *IntegerAggregator::iterator() const {
     // TODO pa3.2: some code goes here
-    return new IntegerAggregatorIterator(gbfield, td, count);
+    return new IntegerAggregatorIterator(gbfield, what, td, aggregates, count);
 }

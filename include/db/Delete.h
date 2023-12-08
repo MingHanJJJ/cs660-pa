@@ -14,12 +14,10 @@ namespace db {
      */
     class Delete : public Operator {
         // TODO pa3.3: add private members
-        TransactionId t;
+        TransactionId tid;
         DbIterator *child;
         TupleDesc td;
-        bool deleted;
-
-        std::vector<DbIterator *> children;
+        bool done;
     protected:
         /**
          * Deletes tuples as they are read from the child operator. Deletes are

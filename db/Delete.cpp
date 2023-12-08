@@ -5,17 +5,12 @@
 
 using namespace db;
 
-Delete::Delete(TransactionId t, DbIterator *child): t(t), child(child) {
+Delete::Delete(TransactionId t, DbIterator *child) {
     // TODO pa3.3: some code goes here
-    std::vector<Types::Type> types;
-    std::vector<std::string> names;
-    types.push_back(Types::INT_TYPE);
-    names.push_back("deleted records");
-    td = TupleDesc(types, names);
-
-    deleted = false;
-    children.push_back(child);
-
+    tid = t;
+    this->child = child;
+    td = TupleDesc({Types::Type::INT_TYPE});
+    done = true;
 }
 
 const TupleDesc &Delete::getTupleDesc() const {
@@ -26,13 +21,14 @@ const TupleDesc &Delete::getTupleDesc() const {
 void Delete::open() {
     // TODO pa3.3: some code goes here
     Operator::open();
+    done = false;
     child->open();
 }
 
 void Delete::close() {
     // TODO pa3.3: some code goes here
-    Operator::close();
     child->close();
+    Operator::close();
 }
 
 void Delete::rewind() {
@@ -43,36 +39,26 @@ void Delete::rewind() {
 
 std::vector<DbIterator *> Delete::getChildren() {
     // TODO pa3.3: some code goes here
-    children[0] = child;
-    return children;
+    return {child};
 }
-
 
 void Delete::setChildren(std::vector<DbIterator *> children) {
     // TODO pa3.3: some code goes here
-    this->child = children[0];
-    this->children[0] = children[0];
+    child = children[0];
 }
 
 std::optional<Tuple> Delete::fetchNext() {
     // TODO pa3.3: some code goes here
-    if(deleted) return std::nullopt;
-
+    if (done) return std::nullopt;
+    done = true;
     int count = 0;
-    std::vector<Tuple*> tuple_to_deleted;
-    child->open();
-    while(child->hasNext()){
-        Tuple tup = child->next();
-        Tuple* tup_ptr = &tup;
+    BufferPool &bufferPool = Database::getBufferPool();
+    while (child->hasNext()) {
+        Tuple next = child->next();
+        bufferPool.deleteTuple(tid, &next);
         count++;
-        tuple_to_deleted.push_back(tup_ptr);
     }
-    for(auto &tuple_delete : tuple_to_deleted){
-        //db::Database::getBufferPool().deleteTuple(t, tuple_delete);
-    }
-    child->close();
-    Tuple tup = Tuple(td);
-    tup.setField(0, new IntField(count));
-    deleted = true;
-    return tup;
+    Tuple result(td);
+    result.setField(0, new IntField(count));
+    return result;
 }

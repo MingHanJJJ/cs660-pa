@@ -3,6 +3,7 @@
 
 #include <db/Aggregator.h>
 #include <optional>
+#include <unordered_map>
 
 namespace db {
 
@@ -12,15 +13,11 @@ namespace db {
     class IntegerAggregator : public Aggregator {
         // TODO pa3.2: add private members
         int gbfield;
-        std::optional<Types::Type> gbfieldtype;
-        int afield;
+        int abfield;
         TupleDesc td;
+        std::unordered_map<const Field *, int> count;
+        std::unordered_map<const Field *, int> aggregates;
         Op what;
-        std::unordered_map<Field *, int> count;
-        std::unordered_map<Field *, std::pair<int, int>> avg_counter;
-
-        std::vector<Field*> field_ptr_map;
-
     public:
         /**
          * Aggregate constructor

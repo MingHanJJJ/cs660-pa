@@ -4,17 +4,12 @@ using namespace db;
 
 HashEquiJoin::HashEquiJoin(JoinPredicate p, DbIterator *child1, DbIterator *child2) : p(p), child1(child1), child2(child2) {
     // TODO pa3.1: some code goes here
-    const db::TupleDesc &td1 = child1->getTupleDesc();
-    const db::TupleDesc &td2 = child2->getTupleDesc();
-    td = db::TupleDesc::merge(td1, td2);
-    childern.push_back(child1);
-    childern.push_back(child2);
+    td = TupleDesc::merge(child1->getTupleDesc(), child2->getTupleDesc());
 }
 
 JoinPredicate *HashEquiJoin::getJoinPredicate() {
     // TODO pa3.1: some code goes here
-    JoinPredicate *ptr = &p;
-    return ptr;
+    return &p;
 }
 
 const TupleDesc &HashEquiJoin::getTupleDesc() const {
@@ -41,72 +36,54 @@ void HashEquiJoin::open() {
 
 void HashEquiJoin::close() {
     // TODO pa3.1: some code goes here
-    Operator::close();
     child1->close();
     child2->close();
+    Operator::close();
 }
 
 void HashEquiJoin::rewind() {
     // TODO pa3.1: some code goes here
-    Operator::rewind();
-    close();
-    open();
+    child1->rewind();
+    child2->rewind();
 }
 
 std::vector<DbIterator *> HashEquiJoin::getChildren() {
     // TODO pa3.1: some code goes here
-    childern[0] = child1;
-    childern[1] = child2;
-    return childern;
+    return {child1, child2};
 }
 
 void HashEquiJoin::setChildren(std::vector<DbIterator *> children) {
     // TODO pa3.1: some code goes here
     child1 = children[0];
     child2 = children[1];
-    this->childern[0] = child1;
-    this->childern[1] = child2;
-
+    td = TupleDesc::merge(child1->getTupleDesc(), child2->getTupleDesc());
 }
 
 std::optional<Tuple> HashEquiJoin::fetchNext() {
     // TODO pa3.1: some code goes here
-    if(tup1 == std::nullopt) {
-        tup1 = child1->next();
-    }
-    if(!child2->hasNext()) {
-        tup1 = child1->next();
+    while (child1_tuple.has_value() || child1->hasNext()) {
+        if (!child1_tuple.has_value()) {
+            child1_tuple = child1->next();
+        }
+        while (child2->hasNext()) {
+            Tuple innerTuple = child2->next();
+            if (!p.filter(&child1_tuple.value(), &innerTuple)) {
+                continue;
+            }
+            Tuple tuple(getTupleDesc());
+            int i = 0;
+            for (auto field: child1_tuple.value()) {
+                tuple.setField(i, field);
+                i++;
+            }
+            for (auto field :innerTuple) {
+                tuple.setField(i, field);
+                i++;
+            }
+            return tuple;
+        }
+        child1_tuple = std::nullopt;
         child2->rewind();
     }
-
-    db::Tuple tup2 = child2->next();;
-    while(!p.filter(reinterpret_cast<Tuple *>(&tup1), &tup2)) {
-        if(child2->hasNext()){
-            // child 2 is not in the end
-            tup2 = child2->next();
-        } else{
-            // child to is the end, move child1 to next
-            if(child1->hasNext()){
-                tup1 = child1->next();
-
-                child2->rewind();
-                tup2 = child2->next();
-            } else {
-                // both child1 and 2 are at the end
-                return std::nullopt;
-            }
-        }
-    }
-    db::Tuple out_tuple = Tuple(td);
-    int index = 0;
-    // combine tup1 and tup2
-    for(int i = 0; i < tup1->getTupleDesc().numFields(); i++) {
-        out_tuple.setField(index, &tup1->getField(i));
-        index++;
-    }
-    for(int i = 0; i < tup2.getTupleDesc().numFields(); i++) {
-        out_tuple.setField(index, &tup2.getField(i));
-        index++;
-    }
-    return out_tuple;
+    return std::nullopt;
 }

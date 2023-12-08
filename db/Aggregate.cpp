@@ -6,43 +6,25 @@ using namespace db;
 
 std::optional<Tuple> Aggregate::fetchNext() {
     // TODO pa3.2: some code goes here
-    if(agg_it->hasNext()){
-        return agg_it->next();
-    }else{
-        return std::nullopt;
-    }
+    return aggregatorIt->hasNext() ? std::make_optional(aggregatorIt->next()) : std::nullopt;
 }
 
-Aggregate::Aggregate(DbIterator *child, int afield, int gfield, Aggregator::Op aop)
-                                        : child(child), afield(afield), gfield(gfield){
+Aggregate::Aggregate(DbIterator *child, int afield, int gfield, Aggregator::Op aop) {
     // TODO pa3.2: some code goes here
-    std::vector<Types::Type> types;
-    std::vector<std::string> names;
-    if(gfield != Aggregator::NO_GROUPING){
-        types.push_back(child->getTupleDesc().getFieldType(gfield));
-        types.push_back(child->getTupleDesc().getFieldType(afield));
-        names.push_back(child->getTupleDesc().getFieldName(gfield));
-        names.push_back(child->getTupleDesc().getFieldName(afield));
-    }else{
-        types.push_back(child->getTupleDesc().getFieldType(afield));
-        names.push_back(child->getTupleDesc().getFieldName(afield));
+    it = child;
+    this->afield = afield;
+    this->gfield = gfield;
+    std::optional<Types::Type> gField;
+    gfield != Aggregator::NO_GROUPING ? std::make_optional(it->getTupleDesc().getFieldType(gfield)) : std::nullopt;
+    this->aop = aop;
+    switch (it->getTupleDesc().getFieldType(afield)) {
+        case Types::INT_TYPE:
+            aggregator = new IntegerAggregator(gfield, gField, afield, aop);
+            break;
+        case Types::STRING_TYPE:
+            aggregator = new StringAggregator(gfield, gField, afield, aop);
+            break;
     }
-    td = TupleDesc(types, names);
-
-    db::IntegerAggregator agg = IntegerAggregator(-1, std::nullopt, afield, aop);
-    if(gfield != Aggregator::NO_GROUPING){
-        agg = IntegerAggregator(gfield, child->getTupleDesc().getFieldType(gfield), afield, aop);
-    }
-    child->open();
-    while(child->hasNext()){
-        auto tup = child->next();
-        agg.mergeTupleIntoGroup(&tup);
-    }
-    child->close();
-    agg_it = agg.iterator();
-    children.push_back(child);
-
-
 }
 
 int Aggregate::groupField() {
@@ -52,11 +34,7 @@ int Aggregate::groupField() {
 
 std::string Aggregate::groupFieldName() {
     // TODO pa3.2: some code goes here
-    if(gfield != Aggregator::NO_GROUPING){
-        return child->getTupleDesc().getFieldName(gfield);
-    }else{
-        return nullptr;
-    }
+    return gfield != Aggregator::NO_GROUPING ? it->getTupleDesc().getFieldName(gfield) : "";
 }
 
 int Aggregate::aggregateField() {
@@ -66,7 +44,7 @@ int Aggregate::aggregateField() {
 
 std::string Aggregate::aggregateFieldName() {
     // TODO pa3.2: some code goes here
-    return child->getTupleDesc().getFieldName(afield);
+    return it->getTupleDesc().getFieldName(afield);
 }
 
 Aggregator::Op Aggregate::aggregateOp() {
@@ -77,35 +55,39 @@ Aggregator::Op Aggregate::aggregateOp() {
 void Aggregate::open() {
     // TODO pa3.2: some code goes here
     Operator::open();
-    agg_it->open();
-
+    it->open();
+    while (it->hasNext()) {
+        Tuple next = it->next();
+        aggregator->mergeTupleIntoGroup(&next);
+    }
+    it->close();
+    aggregatorIt = aggregator->iterator();
+    aggregatorIt->open();
 }
 
 void Aggregate::rewind() {
     // TODO pa3.2: some code goes here
     Operator::rewind();
-    agg_it->rewind();
+    aggregatorIt->rewind();
 }
 
 const TupleDesc &Aggregate::getTupleDesc() const {
     // TODO pa3.2: some code goes here
-    return td;
+    return aggregatorIt->getTupleDesc();
 }
 
 void Aggregate::close() {
     // TODO pa3.2: some code goes here
+    aggregatorIt->close();
     Operator::close();
-    agg_it->close();
 }
 
 std::vector<DbIterator *> Aggregate::getChildren() {
     // TODO pa3.2: some code goes here
-    children[0] = child;
-    return children;
+    return {it};
 }
 
 void Aggregate::setChildren(std::vector<DbIterator *> children) {
     // TODO pa3.2: some code goes here
-    this->child = children[0];
-    this->children[0] = children[0];
+    it = children[0];
 }

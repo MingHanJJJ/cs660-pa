@@ -6,39 +6,26 @@ using namespace db;
 
 std::optional<Tuple> Insert::fetchNext() {
     // TODO pa3.3: some code goes here
-    if(inserted) return std::nullopt;
-
+    if (done) return std::nullopt;
+    done = true;
     int count = 0;
-    std::vector<Tuple> tuple_to_inserted;
-    child->open();
-    while(child->hasNext()){
-        //Tuple* tup_ptr = new Tuple();
-        Tuple tup_ptr = child->next();
+    BufferPool &bufferPool = Database::getBufferPool();
+    while (child->hasNext()) {
+        Tuple next = child->next();
+        bufferPool.insertTuple(transactionId, tableId, &next);
         count++;
-        tuple_to_inserted.push_back(tup_ptr);
-        //db::Database::getBufferPool().insertTuple(t, tableId, &tup_ptr);
     }
-    for(auto &tuple_insert : tuple_to_inserted){
-        db::Database::getBufferPool().insertTuple(t, tableId, &tuple_insert);
-    }
-    child->close();
-    Tuple tup = Tuple(td);
-    tup.setField(0, new IntField(count));
-    inserted = true;
-    return tup;
+    Tuple result(td);
+    result.setField(0, new IntField(count));
+    return result;
 }
 
-Insert::Insert(TransactionId t, DbIterator *child, int tableId): t(t), child(child), tableId(tableId) {
+Insert::Insert(TransactionId t, DbIterator *child, int tableId) {
     // TODO pa3.3: some code goes here
-    inserted = false;
-    std::vector<Types::Type> types;
-    std::vector<std::string> names;
-    types.push_back(Types::INT_TYPE);
-    names.push_back("inserted records");
-    td = TupleDesc(types, names);
-
-    children.push_back(child);
-
+    transactionId = t;
+    this->child = child;
+    this->tableId = tableId;
+    td = TupleDesc({Types::Type::INT_TYPE});
 }
 
 const TupleDesc &Insert::getTupleDesc() const {
@@ -48,30 +35,29 @@ const TupleDesc &Insert::getTupleDesc() const {
 
 void Insert::open() {
     // TODO pa3.3: some code goes here
-    Operator::open();
     child->open();
+    done = false;
+    Operator::open();
 }
 
 void Insert::close() {
     // TODO pa3.3: some code goes here
-    Operator::close();
     child->close();
+    Operator::close();
 }
 
 void Insert::rewind() {
     // TODO pa3.3: some code goes here
-    Operator::rewind();
     child->rewind();
+    Operator::rewind();
 }
 
 std::vector<DbIterator *> Insert::getChildren() {
     // TODO pa3.3: some code goes here
-    children[0] = child;
-    return children;
+    return {child};
 }
 
 void Insert::setChildren(std::vector<DbIterator *> children) {
     // TODO pa3.3: some code goes here
-    this->child = children[0];
-    this->children[0] = children[0];
+    child = children[0];
 }

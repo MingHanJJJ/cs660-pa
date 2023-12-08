@@ -2,62 +2,54 @@
 
 using namespace db;
 
-Filter::Filter(Predicate p, DbIterator *child) : p(p), child(child) {
+Filter::Filter(Predicate p, DbIterator *child) : predicate(p), it(child) {
     // TODO pa3.1: some code goes here
-    children.push_back(child);
 }
 
 Predicate *Filter::getPredicate() {
     // TODO pa3.1: some code goes here
-    Predicate* p_ptr = &p;
-    return p_ptr;
+    return &predicate;
 }
 
 const TupleDesc &Filter::getTupleDesc() const {
     // TODO pa3.1: some code goes here
-    return child->getTupleDesc();
+    return it->getTupleDesc();
 }
 
 void Filter::open() {
     // TODO pa3.1: some code goes here
     Operator::open();
-    child->open();
+    it->open();
 }
 
 void Filter::close() {
     // TODO pa3.1: some code goes here
+    it->close();
     Operator::close();
-    child->close();
 }
 
 void Filter::rewind() {
     // TODO pa3.1: some code goes here
-    Operator::rewind();
-    child->rewind();
+    it->rewind();
 }
 
 std::vector<DbIterator *> Filter::getChildren() {
     // TODO pa3.1: some code goes here
-    children[0] = child;
-    return children;
+    return {it};
 }
 
 void Filter::setChildren(std::vector<DbIterator *> children) {
     // TODO pa3.1: some code goes here
-    this->child = children[0];
-    this->children[0] = children[0];
+    it = children[0];
 }
 
 std::optional<Tuple> Filter::fetchNext() {
     // TODO pa3.1: some code goes here
-    if(!child->hasNext()) return std::nullopt;
-    db::Tuple tup = child->next();
-    while(!p.filter(tup)) {
-        if(child->hasNext()){
-            tup = child->next();
-        } else{
-            return std::nullopt;
+    while (it->hasNext()) {
+        auto tuple = it->next();
+        if (predicate.filter(tuple)) {
+            return tuple;
         }
     }
-    return tup;
+    return std::nullopt;
 }
