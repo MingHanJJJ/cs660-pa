@@ -34,8 +34,11 @@ void IntHistogram::addValue(int v) {
 }
 
 double IntHistogram::estimateSelectivity(Predicate::Op op, int v) const {
+    if(totalHeight == 0) return 0;
     // TODO pa4.1: some code goes here
-    if(op == Predicate::Op::GREATER_THAN || op == Predicate::Op::GREATER_THAN_OR_EQ){
+    if(op == Predicate::Op::GREATER_THAN){
+        if (v < min) return 1;
+        if (v > max) return 0;
         int b;
         // find b
         for(int i = 0; i < buckets; i++){
@@ -45,7 +48,7 @@ double IntHistogram::estimateSelectivity(Predicate::Op op, int v) const {
             }
         }
         double b_f = (double) histog[b].height / totalHeight;
-        double b_part = (double)(histog[b].max - v) / (histog[b].max - histog[b].min + 1);
+        double b_part = ((double)(histog[b].max - v + 0) / (histog[b].max - histog[b].min + 1));
         double selectivity = b_f * b_part;
 
         // rest buckets larger than b
@@ -54,7 +57,30 @@ double IntHistogram::estimateSelectivity(Predicate::Op op, int v) const {
         }
         return selectivity;
 
-    }else if(op == Predicate::Op::LESS_THAN || op == Predicate::Op::LESS_THAN_OR_EQ){
+    } else if(op == Predicate::Op::GREATER_THAN_OR_EQ){
+        if (v < min) return 1;
+        if (v > max) return 0;
+        int b;
+        // find b
+        for(int i = 0; i < buckets; i++){
+            if(histog[i].min <= v && v <= histog[i].max){
+                b = i;
+                break;
+            }
+        }
+        double b_f = (double) histog[b].height / totalHeight;
+        double b_part = (double)(histog[b].max - v + 1) / (histog[b].max - histog[b].min + 1);
+        double selectivity = b_f * b_part;
+
+        // rest buckets larger than b
+        for(int i = b+1; i < buckets; i++){
+            selectivity += (double) histog[i].height / totalHeight;
+        }
+        return selectivity;
+
+    }else if(op == Predicate::Op::LESS_THAN){
+        if (v < min) return 0;
+        if (v > max) return 1;
         int b;
         // find b
         for(int i = 0; i < buckets; i++){
@@ -73,7 +99,30 @@ double IntHistogram::estimateSelectivity(Predicate::Op op, int v) const {
         }
         return selectivity;
 
-    }else if(op == Predicate::Op::EQUALS){
+    } else if( op == Predicate::Op::LESS_THAN_OR_EQ){
+        if (v < min) return 0;
+        if (v > max) return 1;
+        int b;
+        // find b
+        for(int i = 0; i < buckets; i++){
+            if(histog[i].min <= v && v <= histog[i].max){
+                b = i;
+                break;
+            }
+        }
+        double b_f = (double) histog[b].height / totalHeight;
+        double b_part = (double)(v - histog[b].min + 1) / (histog[b].max - histog[b].min + 1);
+        double selectivity = b_f * b_part;
+
+        // rest buckets larger than b
+        for(int i = b-1; i >= 0; i--){
+            selectivity += (double) histog[i].height / totalHeight;
+        }
+        return selectivity;
+
+    } else if(op == Predicate::Op::EQUALS){
+        if (v < min) return 0;
+        if (v > max) return 0;
         int b;
         // find b
         for(int i = 0; i < buckets; i++){
@@ -85,7 +134,22 @@ double IntHistogram::estimateSelectivity(Predicate::Op op, int v) const {
 
         double selectivity = ((double) histog[b].height/(histog[b].max - histog[b].min + 1)) / totalHeight;
         return selectivity;
+    } else if (op == Predicate::Op::NOT_EQUALS){
+        if (v < min) return 1;
+        if (v > max) return 1;
+        int b;
+        // find b
+        for(int i = 0; i < buckets; i++){
+            if(histog[i].min <= v && v <= histog[i].max){
+                b = i;
+                break;
+            }
+        }
+
+        double selectivity = ((double) histog[b].height/(histog[b].max - histog[b].min + 1)) / totalHeight;
+        return 1 - selectivity;
     }
+    return 0;
 
 }
 
